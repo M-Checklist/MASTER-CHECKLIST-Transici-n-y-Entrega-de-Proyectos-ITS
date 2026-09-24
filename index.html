@@ -1,0 +1,310 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Master Checklist: Transición y Entrega ITS</title>
+    <style>
+        :root {
+            --bg: #0f172a;
+            --card-bg: #1e293b;
+            --text: #f8fafc;
+            --text-muted: #94a3b8;
+            --accent: #3b82f6;
+            --critical: #ef4444;
+            --success: #10b981;
+            --border: #334155;
+        }
+
+        body {
+            font-family: system-ui, -apple-system, sans-serif;
+            background-color: var(--bg);
+            color: var(--text);
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            justify-content: center;
+        }
+
+        .container {
+            max-width: 900px;
+            width: 100%;
+        }
+
+        header {
+            background: var(--card-bg);
+            padding: 24px;
+            border-radius: 12px;
+            border: 1px solid var(--border);
+            margin-bottom: 24px;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+        }
+
+        h1 { margin: 0 0 8px 0; font-size: 1.5rem; color: #fff; }
+        p { margin: 0; color: var(--text-muted); font-size: 0.9rem; }
+
+        .progress-container {
+            margin-top: 16px;
+            background: var(--border);
+            border-radius: 8px;
+            height: 12px;
+            overflow: hidden;
+        }
+
+        .progress-bar {
+            background: var(--success);
+            height: 100%;
+            width: 0%;
+            transition: width 0.3s ease;
+        }
+
+        .stats {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 8px;
+            font-size: 0.85rem;
+            font-weight: 600;
+        }
+
+        .controls {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+
+        button {
+            background: var(--border);
+            color: var(--text);
+            border: none;
+            padding: 8px 16px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 0.85rem;
+            transition: background 0.2s;
+        }
+
+        button:hover { background: var(--accent); }
+
+        .phase {
+            background: var(--card-bg);
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            margin-bottom: 16px;
+            overflow: hidden;
+        }
+
+        .phase-header {
+            padding: 16px 20px;
+            background: rgba(255, 255, 255, 0.02);
+            font-weight: bold;
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .checklist-group { padding: 10px 20px; }
+
+        .item {
+            display: flex;
+            align-items: flex-start;
+            gap: 12px;
+            padding: 10px 0;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+        }
+
+        .item:last-child { border-bottom: none; }
+
+        .item input[type="checkbox"] {
+            margin-top: 3px;
+            width: 18px;
+            height: 18px;
+            accent-color: var(--accent);
+            cursor: pointer;
+        }
+
+        .item label {
+            cursor: pointer;
+            line-height: 1.4;
+            font-size: 0.95rem;
+            flex: 1;
+        }
+
+        .badge-critical {
+            background: rgba(239, 68, 68, 0.2);
+            color: #fca5a5;
+            border: 1px solid var(--critical);
+            font-size: 0.7rem;
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-weight: bold;
+            margin-right: 6px;
+        }
+
+        .completed label {
+            text-decoration: line-through;
+            color: var(--text-muted);
+        }
+
+        @media print {
+            body { background: white; color: black; }
+            .phase, header { border: 1px solid #ccc; background: white; }
+            button { display: none; }
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <header>
+        <h1>Master Checklist: Transición y Entrega ITS</h1>
+        <p>Gobernanza y Traspaso de Proyectos desde Preventa hacia PMO y Operaciones</p>
+        <div class="progress-container">
+            <div class="progress-bar" id="progressBar"></div>
+        </div>
+        <div class="stats">
+            <span id="progressText">0% Completado</span>
+            <span id="criticalText">Críticos: 0/0</span>
+        </div>
+    </header>
+
+    <div class="controls">
+        <button onclick="resetChecklist()">Reiniciar Progreso</button>
+        <button onclick="window.print()">Exportar PDF / Imprimir</button>
+    </div>
+
+    <div id="checklistContent"></div>
+</div>
+
+<script>
+const checklistData = [
+    {
+        phase: "Fase 1: Alineación Comercial, Contractual y Alcance (Preventa → PMO)",
+        items: [
+            { id: "f1_1", text: "Alcance Oficial (SOW) firmado con exclusiones y supuestos.", critical: true },
+            { id: "f1_2", text: "BOM (Bill of Materials) exacto cotizado (Hardware/Licencias).", critical: true },
+            { id: "f1_3", text: "Presupuesto, hitos de facturación y horas por perfil.", critical: false },
+            { id: "f1_4", text: "Acuerdos de Nivel de Servicio (SLA/OLA) vendidos.", critical: false },
+            { id: "f1_5", text: "Matriz RACI y Directorio de Stakeholders del cliente.", critical: false }
+        ]
+    },
+    {
+        phase: "Fase 2: Arquitectura y Dominio Técnico (Preventa → PMO)",
+        items: [
+            { id: "f2_1", text: "Sizing validado: Cómputo, SAN/NAS, Consumo Eléctrico/Rackeo.", critical: true },
+            { id: "f2_2", text: "Virtualización: Hypervisor, clústeres y licencias.", critical: false },
+            { id: "f2_3", text: "Entorno Cloud/Híbrido: Landing Zone, tags y FinOps.", critical: false },
+            { id: "f2_4", text: "Topología de Red Aprobada (Diagramas L2/L3 HLD/LLD).", critical: true },
+            { id: "f2_5", text: "Plan de Direccionamiento IP, VLANs, subredes y NAT.", critical: false },
+            { id: "f2_6", text: "Estrategia de Respaldo: RPO, RTO y retención definidos.", critical: true },
+            { id: "f2_7", text: "Ambientes de Software (DEV, QA, STG, PRD) y pipelines CI/CD.", critical: true },
+            { id: "f2_8", text: "Políticas de Acceso (IAM, Active Directory, MFA, Zero Trust).", critical: true }
+        ]
+    },
+    {
+        phase: "Fase 3: Gestión de Riesgos y Readiness (PMO)",
+        items: [
+            { id: "f3_1", text: "Lead Time de Hardware/Licencias confirmado por fabricantes.", critical: true },
+            { id: "f3_2", text: "Contratos y soporte back-to-back firmados con terceros.", critical: false },
+            { id: "f3_3", text: "Accesos remotos (VPN) y permisos de sitio tramitados.", critical: false },
+            { id: "f3_4", text: "Gestión de Cuentas Privilegiadas (Bóveda PAM configurada).", critical: false }
+        ]
+    },
+    {
+        phase: "Fase 4: Transición a Operaciones (PMO → Operaciones)",
+        items: [
+            { id: "f4_1", text: "Documentación As-Built final entregada.", critical: true },
+            { id: "f4_2", text: "Manuales y Runbooks operativos cargados en la KEDB.", critical: false },
+            { id: "f4_3", text: "Monitoreo y Alertas integrados a NMS/SIEM (Umbrales fijados).", critical: false },
+            { id: "f4_4", text: "Estrategia de Rollback documentada y probada.", critical: false },
+            { id: "f4_5", text: "Sesión de Transferencia de Conocimiento (KT) impartida.", critical: false },
+            { id: "f4_6", text: "Matriz de Escalamiento e integración a ITSM (Tickets).", critical: false }
+        ]
+    },
+    {
+        phase: "Fase 5: Aceptación y Cierre Oficial (PMO → Cliente/Operaciones)",
+        items: [
+            { id: "f5_1", text: "Pruebas UAT ejecutadas y firmadas por el cliente.", critical: true },
+            { id: "f5_2", text: "Ventanas de Mantenimiento formalmente acordadas.", critical: false },
+            { id: "f5_3", text: "Acta de Entrega Operativa firmada por PMO y Operaciones.", critical: false }
+        ]
+    }
+];
+
+function renderChecklist() {
+    const container = document.getElementById('checklistContent');
+    const savedState = JSON.parse(localStorage.getItem('its_checklist_state') || '{}');
+    
+    container.innerHTML = '';
+
+    checklistData.forEach(group => {
+        const phaseDiv = document.createElement('div');
+        phaseDiv.className = 'phase';
+        
+        let itemsHtml = group.items.map(item => {
+            const isChecked = savedState[item.id] ? 'checked' : '';
+            const completedClass = savedState[item.id] ? 'completed' : '';
+            const criticalBadge = item.critical ? '<span class="badge-critical">CRÍTICO</span>' : '';
+            
+            return `
+                <div class="item ${completedClass}">
+                    <input type="checkbox" id="${item.id}" ${isChecked} onchange="toggleItem('${item.id}')">
+                    <label for="${item.id}">${criticalBadge}${item.text}</label>
+                </div>
+            `;
+        }).join('');
+
+        phaseDiv.innerHTML = `
+            <div class="phase-header">${group.phase}</div>
+            <div class="checklist-group">${itemsHtml}</div>
+        `;
+        container.appendChild(phaseDiv);
+    });
+
+    updateMetrics();
+}
+
+function toggleItem(id) {
+    const savedState = JSON.parse(localStorage.getItem('its_checklist_state') || '{}');
+    savedState[id] = !savedState[id];
+    localStorage.setItem('its_checklist_state', JSON.stringify(savedState));
+    renderChecklist();
+}
+
+function updateMetrics() {
+    const savedState = JSON.parse(localStorage.getItem('its_checklist_state') || '{}');
+    let totalItems = 0;
+    let completedItems = 0;
+    let totalCritical = 0;
+    let completedCritical = 0;
+
+    checklistData.forEach(group => {
+        group.items.forEach(item => {
+            totalItems++;
+            if (item.critical) totalCritical++;
+            
+            if (savedState[item.id]) {
+                completedItems++;
+                if (item.critical) completedCritical++;
+            }
+        });
+    });
+
+    const percentage = totalItems === 0 ? 0 : Math.round((completedItems / totalItems) * 100);
+    document.getElementById('progressBar').style.width = `${percentage}%`;
+    document.getElementById('progressText').innerText = `${percentage}% Completado (${completedItems}/${totalItems})`;
+    document.getElementById('criticalText').innerText = `Críticos: ${completedCritical}/${totalCritical}`;
+}
+
+function resetChecklist() {
+    if (confirm("¿Seguro que deseas reiniciar todo el progreso?")) {
+        localStorage.removeItem('its_checklist_state');
+        renderChecklist();
+    }
+}
+
+// Inicializar al cargar
+renderChecklist();
+</script>
+</body>
+</html>
