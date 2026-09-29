@@ -208,6 +208,21 @@
             .phase, header { border: 1px solid #ccc; background: white; }
             .controls, button { display: none; }
         }
+        button.btn-email {
+    background: #8b5cf6; /* Color violeta/púrpura para destacar */
+    color: #ffffff;
+    font-weight: 600;
+}
+
+button.btn-email:hover {
+    background: #7c3aed;
+}
+
+button.btn-email:disabled {
+    background: var(--locked);
+    cursor: not-allowed;
+    opacity: 0.7;
+}
     </style>
 </head>
 <body>
@@ -257,8 +272,7 @@
     <button id="lockBtn" class="btn-lock" onclick="sealAndSendChecklist()">
         🔒 Firmar, Bloquear y Enviar
     </button>
-    
-    <button class="btn-secondary" onclick="window.print()">🖨️ Exportar PDF</button>
+        <button class="btn-secondary" onclick="window.print()">🖨️ Exportar PDF</button>
     <button class="btn-secondary" onclick="resetChecklist()">🔄 Reiniciar</button>
 </div>
 
