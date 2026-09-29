@@ -521,6 +521,90 @@ document.querySelectorAll('.metadata-grid input').forEach(input => {
 });
 
 renderChecklist();
+
+    async function sendAutomaticEmail() {
+    const projectName = document.getElementById('projectName').value.trim();
+    const projectId = document.getElementById('projectId').value.trim();
+    const engineerName = document.getElementById('engineerName').value.trim();
+    const targetEmail = document.getElementById('targetEmail').value.trim();
+    const emailBtn = document.getElementById('sendEmailBtn');
+
+    // Validar campos obligatorios
+    if (!projectName || !projectId || !engineerName || !targetEmail) {
+        alert("⚠️ Atención: Debes llenar el Nombre del Proyecto, ID, Responsable y Correo Destino antes de enviar.");
+        return;
+    }
+
+    const store = getStoredData();
+    const timestamp = new Date().toLocaleString('es-MX');
+    const auditHash = store.auditHash || ("HASH-ITS-" + Math.random().toString(36).substring(2, 10).toUpperCase() + "-" + Date.now());
+
+    // Construir el reporte técnico formateado
+    let reportBody = `===========================================\n`;
+    reportBody += ` REPORTE DE EVIDENCIA: MASTER CHECKLIST ITS\n`;
+    reportBody += `===========================================\n`;
+    reportBody += `• Proyecto: ${projectName}\n`;
+    reportBody += `• ID / Ticket: ${projectId}\n`;
+    reportBody += `• Responsable: ${engineerName}\n`;
+    reportBody += `• Fecha / Hora: ${timestamp}\n`;
+    reportBody += `• Firma Digital: ${auditHash}\n\n`;
+    reportBody += `DETALLE DE VERIFICACIÓN POR DOMINIO:\n`;
+
+    checklistData.forEach(group => {
+        reportBody += `\n--- ${group.phase} ---\n`;
+        group.items.forEach(item => {
+            const isChecked = store.checks && store.checks[item.id];
+            const status = isChecked ? "[ OK ]" : "[ PENDIENTE ]";
+            const critical = item.critical ? " (CRÍTICO)" : "";
+            reportBody += `${status} ${critical} ${item.text}\n`;
+        });
+    });
+
+    // Feedback visual en el botón
+    const originalText = emailBtn.innerHTML;
+    emailBtn.disabled = true;
+    emailBtn.innerHTML = "⏳ Enviando correo...";
+
+    // Verificar si EmailJS está configurado
+    if (typeof emailjs !== "undefined" && EMAILJS_PUBLIC_KEY !== "TU_PUBLIC_KEY_AQUI") {
+        try {
+            await emailjs.send(EMAILJS_SERVICE_ID, EMAILJS_TEMPLATE_ID, {
+                to_email: targetEmail,
+                project_name: projectName,
+                project_id: projectId,
+                engineer_name: engineerName,
+                audit_hash: auditHash,
+                summary_report: reportBody
+            });
+
+            emailBtn.innerHTML = "✅ ¡Correo Enviado!";
+            emailBtn.style.backgroundColor = "var(--success)";
+            alert(`📩 La evidencia del proyecto "${projectName}" fue enviada con éxito a ${targetEmail}`);
+
+            // Restaurar botón tras 4 segundos si el formulario no está bloqueado
+            setTimeout(() => {
+                if (!store.isLocked) {
+                    emailBtn.disabled = false;
+                    emailBtn.innerHTML = originalText;
+                    emailBtn.style.backgroundColor = "";
+                }
+            }, 4000);
+
+        } catch (error) {
+            console.error("Error al enviar con EmailJS:", error);
+            emailBtn.disabled = false;
+            emailBtn.innerHTML = "❌ Error al enviar. Reintentar";
+            emailBtn.style.backgroundColor = "var(--critical)";
+            alert("Ocurrió un error al enviar el correo vía EmailJS. Verifique la consola o sus llaves API.");
+        }
+    } else {
+        // Fallback si no hay llaves de EmailJS configuradas
+        const mailtoLink = `mailto:${targetEmail}?subject=Evidencia Checklist ITS - ${encodeURIComponent(projectName)}&body=${encodeURIComponent(reportBody)}`;
+        window.location.href = mailtoLink;
+        emailBtn.disabled = false;
+        emailBtn.innerHTML = originalText;
+    }
+}
 </script>
 </body>
 </html>
