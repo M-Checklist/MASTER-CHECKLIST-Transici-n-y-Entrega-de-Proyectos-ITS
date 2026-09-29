@@ -262,7 +262,7 @@ const EMAILJS_PUBLIC_KEY = "_q-eUtRSHYBJe7r1M";
 const EMAILJS_SERVICE_ID = "service_ntg3tfj";
 const EMAILJS_TEMPLATE_ID = "template_8sz78ft";
 
-if (EMAILJS_PUBLIC_KEY !== "TU_PUBLIC_KEY_AQUI") {
+if (EMAILJS_PUBLIC_KEY !== "_q-eUtRSHYBJe7r1M") {
     emailjs.init(EMAILJS_PUBLIC_KEY);
 }
 
@@ -461,7 +461,7 @@ async function sealAndSendChecklist() {
     });
 
     // Enviar por correo si EmailJS está configurado
-    if (EMAILJS_PUBLIC_KEY !== "TU_PUBLIC_KEY_AQUI") {
+    if (EMAILJS_PUBLIC_KEY !== "_q-eUtRSHYBJe7r1M") {
         try {
             await emailjs.send(EMAILJS_SERVICE_ID, EMAILJS_TEMPLATE_ID, {
                 to_email: targetEmail,
