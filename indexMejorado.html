@@ -247,13 +247,19 @@
 
     <div id="auditSeal" class="audit-seal"></div>
 
-    <div class="controls">
-        <button id="lockBtn" class="btn-lock" onclick="sealAndSendChecklist()">Firmar, Bloquear y Enviar Evidencia</button>
-        <button class="btn-secondary" onclick="window.print()">Exportar PDF / Imprimir</button>
-        <button class="btn-secondary" onclick="resetChecklist()">Reiniciar Formulario</button>
-    </div>
-
-    <div id="checklistContent"></div>
+<div class="controls">
+    <!-- Botón directo para enviar correo automático -->
+    <button id="sendEmailBtn" class="btn-email" onclick="sendAutomaticEmail()">
+        📧 Enviar Evidencia por Correo
+    </button>
+    
+    <!-- Botón para sellar, bloquear y enviar en un solo paso -->
+    <button id="lockBtn" class="btn-lock" onclick="sealAndSendChecklist()">
+        🔒 Firmar, Bloquear y Enviar
+    </button>
+    
+    <button class="btn-secondary" onclick="window.print()">🖨️ Exportar PDF</button>
+    <button class="btn-secondary" onclick="resetChecklist()">🔄 Reiniciar</button>
 </div>
 
 <script>
