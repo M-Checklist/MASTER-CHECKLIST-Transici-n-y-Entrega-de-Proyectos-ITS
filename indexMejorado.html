@@ -1,0 +1,506 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Master Checklist ITS - Control de Entregas</title>
+    <!-- SDK de EmailJS para envío seguro vía HTTPS -->
+    <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/@emailjs/browser@3/dist/email.min.js"></script>
+    <style>
+        :root {
+            --bg: #0f172a;
+            --card-bg: #1e293b;
+            --text: #f8fafc;
+            --text-muted: #94a3b8;
+            --accent: #3b82f6;
+            --critical: #ef4444;
+            --success: #10b981;
+            --border: #334155;
+            --locked: #64748b;
+        }
+
+        body {
+            font-family: system-ui, -apple-system, sans-serif;
+            background-color: var(--bg);
+            color: var(--text);
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            justify-content: center;
+        }
+
+        .container {
+            max-width: 900px;
+            width: 100%;
+        }
+
+        header {
+            background: var(--card-bg);
+            padding: 24px;
+            border-radius: 12px;
+            border: 1px solid var(--border);
+            margin-bottom: 20px;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+        }
+
+        h1 { margin: 0 0 8px 0; font-size: 1.5rem; color: #fff; }
+        p { margin: 0; color: var(--text-muted); font-size: 0.9rem; }
+
+        .metadata-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 12px;
+            margin-top: 16px;
+            padding-top: 16px;
+            border-top: 1px solid var(--border);
+        }
+
+        .input-group {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+
+        .input-group label {
+            font-size: 0.75rem;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            font-weight: 600;
+        }
+
+        .input-group input {
+            background: #0f172a;
+            border: 1px solid var(--border);
+            color: var(--text);
+            padding: 8px 12px;
+            border-radius: 6px;
+            font-size: 0.85rem;
+        }
+
+        .input-group input:disabled {
+            background: #334155;
+            color: #94a3b8;
+            cursor: not-allowed;
+        }
+
+        .progress-container {
+            margin-top: 16px;
+            background: var(--border);
+            border-radius: 8px;
+            height: 12px;
+            overflow: hidden;
+        }
+
+        .progress-bar {
+            background: var(--success);
+            height: 100%;
+            width: 0%;
+            transition: width 0.3s ease;
+        }
+
+        .stats {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 8px;
+            font-size: 0.85rem;
+            font-weight: 600;
+        }
+
+        .controls {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+        }
+
+        button {
+            background: var(--accent);
+            color: #fff;
+            border: none;
+            padding: 10px 18px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 0.85rem;
+            font-weight: 600;
+            transition: opacity 0.2s;
+        }
+
+        button:hover { opacity: 0.9; }
+        button.btn-secondary { background: var(--border); color: var(--text); }
+        button.btn-lock { background: var(--success); }
+        button:disabled { background: var(--locked); cursor: not-allowed; opacity: 0.6; }
+
+        .phase {
+            background: var(--card-bg);
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            margin-bottom: 16px;
+            overflow: hidden;
+        }
+
+        .phase-header {
+            padding: 16px 20px;
+            background: rgba(255, 255, 255, 0.02);
+            font-weight: bold;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .checklist-group { padding: 10px 20px; }
+
+        .item {
+            display: flex;
+            align-items: flex-start;
+            gap: 12px;
+            padding: 10px 0;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+        }
+
+        .item:last-child { border-bottom: none; }
+
+        .item input[type="checkbox"] {
+            margin-top: 3px;
+            width: 18px;
+            height: 18px;
+            accent-color: var(--accent);
+            cursor: pointer;
+        }
+
+        .item input[type="checkbox"]:disabled {
+            cursor: not-allowed;
+        }
+
+        .item label {
+            line-height: 1.4;
+            font-size: 0.95rem;
+            flex: 1;
+        }
+
+        .badge-critical {
+            background: rgba(239, 68, 68, 0.2);
+            color: #fca5a5;
+            border: 1px solid var(--critical);
+            font-size: 0.7rem;
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-weight: bold;
+            margin-right: 6px;
+        }
+
+        .completed label {
+            text-decoration: line-through;
+            color: var(--text-muted);
+        }
+
+        .audit-seal {
+            display: none;
+            background: rgba(16, 185, 129, 0.1);
+            border: 1px solid var(--success);
+            color: var(--success);
+            padding: 12px;
+            border-radius: 8px;
+            font-size: 0.85rem;
+            margin-bottom: 16px;
+            word-break: break-all;
+        }
+
+        @media print {
+            body { background: white; color: black; }
+            .phase, header { border: 1px solid #ccc; background: white; }
+            .controls, button { display: none; }
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <header>
+        <h1>Master Checklist: Transición y Entrega ITS</h1>
+        <p>Alineación y Handover Oficial (Preventa → PMO → Operaciones)</p>
+        
+        <div class="metadata-grid">
+            <div class="input-group">
+                <label for="projectName">Nombre del Proyecto *</label>
+                <input type="text" id="projectName" placeholder="Ej. Migración Cloud Banco X">
+            </div>
+            <div class="input-group">
+                <label for="projectId">Código / Ticket ID *</label>
+                <input type="text" id="projectId" placeholder="Ej. PRJ-2026-091">
+            </div>
+            <div class="input-group">
+                <label for="engineerName">Líder / Responsable *</label>
+                <input type="text" id="engineerName" placeholder="Ej. Ing. Carlos Pérez">
+            </div>
+            <div class="input-group">
+                <label for="targetEmail">Correo Destino Evidencia *</label>
+                <input type="email" id="targetEmail" placeholder="pmo-operaciones@empresa.com">
+            </div>
+        </div>
+
+        <div class="progress-container">
+            <div class="progress-bar" id="progressBar"></div>
+        </div>
+        <div class="stats">
+            <span id="progressText">0% Completado</span>
+            <span id="criticalText">Críticos: 0/0</span>
+        </div>
+    </header>
+
+    <div id="auditSeal" class="audit-seal"></div>
+
+    <div class="controls">
+        <button id="lockBtn" class="btn-lock" onclick="sealAndSendChecklist()">Firmar, Bloquear y Enviar Evidencia</button>
+        <button class="btn-secondary" onclick="window.print()">Exportar PDF / Imprimir</button>
+        <button class="btn-secondary" onclick="resetChecklist()">Reiniciar Formulario</button>
+    </div>
+
+    <div id="checklistContent"></div>
+</div>
+
+<script>
+// Configuración de EmailJS (Reemplazar con tus llaves públicas)
+const EMAILJS_PUBLIC_KEY = "TU_PUBLIC_KEY_AQUI"; 
+const EMAILJS_SERVICE_ID = "TU_SERVICE_ID_AQUI";
+const EMAILJS_TEMPLATE_ID = "TU_TEMPLATE_ID_AQUI";
+
+if (EMAILJS_PUBLIC_KEY !== "TU_PUBLIC_KEY_AQUI") {
+    emailjs.init(EMAILJS_PUBLIC_KEY);
+}
+
+const checklistData = [
+    {
+        phase: "Fase 1: Alineación Comercial, Contractual y Alcance (Preventa → PMO)",
+        items: [
+            { id: "f1_1", text: "Alcance Oficial (SOW) firmado con exclusiones y supuestos.", critical: true },
+            { id: "f1_2", text: "BOM (Bill of Materials) exacto cotizado (Hardware/Licencias).", critical: true },
+            { id: "f1_3", text: "Presupuesto, hitos de facturación y horas por perfil.", critical: false },
+            { id: "f1_4", text: "Acuerdos de Nivel de Servicio (SLA/OLA) vendidos.", critical: false },
+            { id: "f1_5", text: "Matriz RACI y Directorio de Stakeholders del cliente.", critical: false }
+        ]
+    },
+    {
+        phase: "Fase 2: Arquitectura y Dominio Técnico (Preventa → PMO)",
+        items: [
+            { id: "f2_1", text: "Sizing validado: Cómputo, SAN/NAS, Consumo Eléctrico/Rackeo.", critical: true },
+            { id: "f2_2", text: "Virtualización: Hypervisor, clústeres y licencias.", critical: false },
+            { id: "f2_3", text: "Entorno Cloud/Híbrido: Landing Zone, tags y FinOps.", critical: false },
+            { id: "f2_4", text: "Topología de Red Aprobada (Diagramas L2/L3 HLD/LLD).", critical: true },
+            { id: "f2_5", text: "Plan de Direccionamiento IP, VLANs, subredes y NAT.", critical: false },
+            { id: "f2_6", text: "Estrategia de Respaldo: RPO, RTO y retención definidos.", critical: true },
+            { id: "f2_7", text: "Ambientes de Software (DEV, QA, STG, PRD) y pipelines CI/CD.", critical: true },
+            { id: "f2_8", text: "Políticas de Acceso (IAM, Active Directory, MFA, Zero Trust).", critical: true }
+        ]
+    },
+    {
+        phase: "Fase 3: Gestión de Riesgos y Readiness (PMO)",
+        items: [
+            { id: "f3_1", text: "Lead Time de Hardware/Licencias confirmado por fabricantes.", critical: true },
+            { id: "f3_2", text: "Contratos y soporte back-to-back firmados con terceros.", critical: false },
+            { id: "f3_3", text: "Accesos remotos (VPN) y permisos de sitio tramitados.", critical: false },
+            { id: "f3_4", text: "Gestión de Cuentas Privilegiadas (Bóveda PAM configurada).", critical: false }
+        ]
+    },
+    {
+        phase: "Fase 4: Transición a Operaciones (PMO → Operaciones)",
+        items: [
+            { id: "f4_1", text: "Documentación As-Built final entregada.", critical: true },
+            { id: "f4_2", text: "Manuales y Runbooks operativos cargados en la KEDB.", critical: false },
+            { id: "f4_3", text: "Monitoreo y Alertas integrados a NMS/SIEM (Umbrales fijados).", critical: false },
+            { id: "f4_4", text: "Estrategia de Rollback documentada y probada.", critical: false },
+            { id: "f4_5", text: "Sesión de Transferencia de Conocimiento (KT) impartida.", critical: false },
+            { id: "f4_6", text: "Matriz de Escalamiento e integración a ITSM (Tickets).", critical: false }
+        ]
+    },
+    {
+        phase: "Fase 5: Aceptación y Cierre Oficial (PMO → Cliente/Operaciones)",
+        items: [
+            { id: "f5_1", text: "Pruebas UAT ejecutadas y firmadas por el cliente.", critical: true },
+            { id: "f5_2", text: "Ventanas de Mantenimiento formalmente acordadas.", critical: false },
+            { id: "f5_3", text: "Acta de Entrega Operativa firmada por PMO y Operaciones.", critical: false }
+        ]
+    }
+];
+
+function getStoredData() {
+    return JSON.parse(localStorage.getItem('its_master_checklist') || '{}');
+}
+
+function renderChecklist() {
+    const container = document.getElementById('checklistContent');
+    const store = getStoredData();
+    const isLocked = store.isLocked || false;
+    const checks = store.checks || {};
+
+    // Cargar metadatos guardados
+    document.getElementById('projectName').value = store.projectName || '';
+    document.getElementById('projectId').value = store.projectId || '';
+    document.getElementById('engineerName').value = store.engineerName || '';
+    document.getElementById('targetEmail').value = store.targetEmail || '';
+
+    // Bloquear metadatos si el checklist fue sellado
+    document.querySelectorAll('.metadata-grid input').forEach(input => input.disabled = isLocked);
+
+    container.innerHTML = '';
+
+    checklistData.forEach(group => {
+        const phaseDiv = document.createElement('div');
+        phaseDiv.className = 'phase';
+        
+        let itemsHtml = group.items.map(item => {
+            const isChecked = checks[item.id] ? 'checked' : '';
+            const completedClass = checks[item.id] ? 'completed' : '';
+            const disabledAttr = isLocked ? 'disabled' : '';
+            const criticalBadge = item.critical ? '<span class="badge-critical">CRÍTICO</span>' : '';
+            
+            return `
+                <div class="item ${completedClass}">
+                    <input type="checkbox" id="${item.id}" ${isChecked} ${disabledAttr} onchange="toggleItem('${item.id}')">
+                    <label for="${item.id}">${criticalBadge}${item.text}</label>
+                </div>
+            `;
+        }).join('');
+
+        phaseDiv.innerHTML = `
+            <div class="phase-header">${group.phase}</div>
+            <div class="checklist-group">${itemsHtml}</div>
+        `;
+        container.appendChild(phaseDiv);
+    });
+
+    if (isLocked) {
+        document.getElementById('lockBtn').disabled = true;
+        document.getElementById('lockBtn').innerText = "Checklist Firmado y Bloqueado";
+        const seal = document.getElementById('auditSeal');
+        seal.style.display = 'block';
+        seal.innerHTML = `<strong>ENTREGA SELLADA CON ÉXITO:</strong><br>
+            • Firma Auditoría: ${store.auditHash}<br>
+            • Fecha de Bloqueo: ${store.lockedAt}`;
+    }
+
+    updateMetrics();
+}
+
+function toggleItem(id) {
+    const store = getStoredData();
+    if (store.isLocked) return;
+
+    store.checks = store.checks || {};
+    store.checks[id] = !store.checks[id];
+    saveState(store);
+    renderChecklist();
+}
+
+function saveState(store) {
+    store.projectName = document.getElementById('projectName').value;
+    store.projectId = document.getElementById('projectId').value;
+    store.engineerName = document.getElementById('engineerName').value;
+    store.targetEmail = document.getElementById('targetEmail').value;
+    localStorage.setItem('its_master_checklist', JSON.stringify(store));
+}
+
+function updateMetrics() {
+    const store = getStoredData();
+    const checks = store.checks || {};
+    let totalItems = 0, completedItems = 0, totalCritical = 0, completedCritical = 0;
+
+    checklistData.forEach(group => {
+        group.items.forEach(item => {
+            totalItems++;
+            if (item.critical) totalCritical++;
+            if (checks[item.id]) {
+                completedItems++;
+                if (item.critical) completedCritical++;
+            }
+        });
+    });
+
+    const percentage = totalItems === 0 ? 0 : Math.round((completedItems / totalItems) * 100);
+    document.getElementById('progressBar').style.width = `${percentage}%`;
+    document.getElementById('progressText').innerText = `${percentage}% Completado (${completedItems}/${totalItems})`;
+    document.getElementById('criticalText').innerText = `Críticos: ${completedCritical}/${totalCritical}`;
+}
+
+async function sealAndSendChecklist() {
+    const projectName = document.getElementById('projectName').value.trim();
+    const projectId = document.getElementById('projectId').value.trim();
+    const engineerName = document.getElementById('engineerName').value.trim();
+    const targetEmail = document.getElementById('targetEmail').value.trim();
+
+    if (!projectName || !projectId || !engineerName || !targetEmail) {
+        alert("Atención: Todos los campos de metadatos (Proyecto, ID, Responsable, Correo) son obligatorios para firmar la entrega.");
+        return;
+    }
+
+    if (!confirm("¿Deseas firmar y finalizar este checklist? Una vez sellado, los campos Y checks NO SE PODRÁN MODIFICAR NI BORRAR.")) {
+        return;
+    }
+
+    const store = getStoredData();
+    saveState(store);
+
+    // Generar Firma de Auditoría
+    const timestamp = new Date().toISOString();
+    const auditHash = "HASH-ITS-" + Math.random().toString(36).substring(2, 10).toUpperCase() + "-" + Date.now();
+
+    store.isLocked = true;
+    store.lockedAt = new Date().toLocaleString('es-MX');
+    store.auditHash = auditHash;
+    saveState(store);
+
+    // Construir Resumen de Evidencia
+    let reportBody = `REPORTE DE EVIDENCIA ITS\n`;
+    report`Proyecto: ${projectName} (${projectId})\nResponsable: ${engineerName}\nFirma: ${auditHash}\nFecha: ${store.lockedAt}\n\n`;
+
+    checklistData.forEach(g => {
+        reportBody += `--- ${g.phase} ---\n`;
+        g.items.forEach(i => {
+            const status = store.checks && store.checks[i.id] ? "[OK]" : "[PENDIENTE]";
+            const crit = i.critical ? "(CRÍTICO)" : "";
+            reportBody += `${status} ${crit} ${i.text}\n`;
+        });
+        reportBody += `\n`;
+    });
+
+    // Enviar por correo si EmailJS está configurado
+    if (EMAILJS_PUBLIC_KEY !== "TU_PUBLIC_KEY_AQUI") {
+        try {
+            await emailjs.send(EMAILJS_SERVICE_ID, EMAILJS_TEMPLATE_ID, {
+                to_email: targetEmail,
+                project_name: projectName,
+                project_id: projectId,
+                engineer_name: engineerName,
+                audit_hash: auditHash,
+                summary_report: reportBody
+            });
+            alert("Evidencia enviada por correo exitosamente y checklist sellado.");
+        } catch (err) {
+            alert("El checklist fue sellado localmente, pero hubo un detalle al enviar el correo: " + JSON.stringify(err));
+        }
+    } else {
+        // Fallback si no han configurado EmailJS
+        const mailtoLink = `mailto:${targetEmail}?subject=Evidencia Checklist ITS - ${encodeURIComponent(projectName)}&body=${encodeURIComponent(reportBody)}`;
+        window.location.href = mailtoLink;
+        alert("Formulario bloqueado e inmutable. Se ha abierto tu cliente de correo para enviar la evidencia.");
+    }
+
+    renderChecklist();
+}
+
+function resetChecklist() {
+    if (confirm("¿Seguro que deseas borrar el registro local? Esto solo es permitido para iniciar una nueva evaluación.")) {
+        localStorage.removeItem('its_master_checklist');
+        location.reload();
+    }
+}
+
+// Escuchar cambios en metadatos para guardar borrador
+document.querySelectorAll('.metadata-grid input').forEach(input => {
+    input.addEventListener('input', () => {
+        const store = getStoredData();
+        saveState(store);
+    });
+});
+
+renderChecklist();
+</script>
+</body>
+</html>
